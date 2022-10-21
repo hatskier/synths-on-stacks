@@ -8,6 +8,10 @@ requirements = []
 [contracts.sample-sip-010-token]
 path = 'contracts/sample-sip-010-token.clar'
 clarity_version = 1
+
+[contracts.synth]
+path = 'contracts/synth.clar'
+clarity_version = 1
 [repl.analysis]
 passes = ['check_checker']
 
