@@ -23,7 +23,8 @@
 (define-constant err-not-initialized (err u12))
 (define-constant err-token-uri-feat-not-implemented (err u13))
 (define-constant err-oracle-data-update-failed (err u14))
-(define-constant err-redstone-payload-cannot-be-empty (err u15))
+(define-constant err-empty-redstone-payload (err u15))
+(define-constant err-name-can-not-be-empty (err u16))
 
 (define-constant decimals u6)
 (define-constant oracle-data-ttl-seconds u120)
@@ -165,7 +166,7 @@
           (verify-and-extract (var-get data-feed-id-of-underlying-asset) redstone-payload)
         )
       )
-      (asserts! (> (len redstone-payload) u0) err-redstone-payload-cannot-be-empty)
+      (asserts! (> (len redstone-payload) u0) err-empty-redstone-payload)
       (var-set last-oracle-update-timestamp (get-block-timestamp))
       (var-set stx-price-from-oracle new-stx-price)
       (var-set underlying-asset-price-from-oracle new-underlying-asset-price)
@@ -181,11 +182,16 @@
 
 (define-public
   (initialize
-    (initial-data-feed-id-of-underlying-asset (string-ascii 64))
+    (initial-name (string-ascii 32))
     (initial-symbol (string-ascii 32))
+    (initial-data-feed-id-of-underlying-asset (string-ascii 64))
   )
   (begin
     (asserts! (not (var-get initialized)) err-already-initialized)
+    (asserts!
+      (not (is-eq initial-name ""))
+      err-name-can-not-be-empty
+    )
     (asserts!
       (not (is-eq initial-data-feed-id-of-underlying-asset ""))
       err-invalid-data-feed-id
@@ -194,8 +200,9 @@
       (not (is-eq initial-symbol ""))
       err-symbol-can-not-be-empty
     )
-    (var-set data-feed-id-of-underlying-asset initial-data-feed-id-of-underlying-asset)
+    (var-set name initial-name)
     (var-set symbol initial-symbol)
+    (var-set data-feed-id-of-underlying-asset initial-data-feed-id-of-underlying-asset)
     (var-set initialized true)
     success-response
   )
@@ -218,6 +225,7 @@
 (define-public (remove-collateral (stx-amount uint) (redstone-payload (buff 1024)))
   (let ((recipient tx-sender))
     (asserts! (var-get initialized) err-not-initialized)
+    (asserts! (> (len redstone-payload) u0) err-empty-redstone-payload)
     (asserts! (> stx-amount u0) err-invalid-amount-param)
     (unwrap! (lazy-oracle-refresh redstone-payload) err-oracle-data-update-failed)
     (unwrap!
@@ -237,6 +245,7 @@
   (begin
     (asserts! (var-get initialized) err-not-initialized)
     (asserts! (> synth-amount u0) err-invalid-amount-param)
+    (asserts! (> (len redstone-payload) u0) err-empty-redstone-payload)
     (unwrap! (lazy-oracle-refresh redstone-payload) err-oracle-data-update-failed)
     (unwrap! (ft-mint? synth-ft synth-amount tx-sender) err-synth-minting-failed)
     (unwrap! (ft-mint? debt-ft synth-amount tx-sender) err-debt-saving-failed)
@@ -279,6 +288,7 @@
       (liquidator tx-sender)
     )
     (asserts! (var-get initialized) err-not-initialized)
+    (asserts! (> (len redstone-payload) u0) err-empty-redstone-payload)
     (unwrap! (lazy-oracle-refresh redstone-payload) err-oracle-data-update-failed)
 
     ;; Checking if the account is not solvent
