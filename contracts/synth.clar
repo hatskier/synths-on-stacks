@@ -134,6 +134,7 @@
 
 (define-public (add-collateral (stx-amount uint))
   (begin
+    (asserts! (var-get initialized) err-not-initialized)
     (asserts! (> stx-amount u0) err-invalid-amount-param)
     (unwrap!
       (stx-transfer? stx-amount tx-sender (as-contract tx-sender))
@@ -146,6 +147,7 @@
 
 (define-public (remove-collateral (stx-amount uint))
   (let ((recipient tx-sender))
+    (asserts! (var-get initialized) err-not-initialized)
     (asserts! (> stx-amount u0) err-invalid-amount-param)
     (unwrap!
       (ft-burn? locked-stx-ft stx-amount tx-sender)
@@ -162,6 +164,7 @@
 
 (define-public (mint (synth-amount uint))
   (begin
+    (asserts! (var-get initialized) err-not-initialized)
     (asserts! (> synth-amount u0) err-invalid-amount-param)
     (unwrap! (ft-mint? synth-ft synth-amount tx-sender) err-synth-minting-failed)
     (unwrap! (ft-mint? debt-ft synth-amount tx-sender) err-debt-saving-failed)
@@ -178,6 +181,7 @@
     (memo (optional (buff 34)))
   )
   (begin
+    (asserts! (var-get initialized) err-not-initialized)
     (asserts! (> amount u0) err-invalid-amount-param)
     (asserts! (is-eq sender tx-sender) (err u1))
     (asserts! (not (is-eq recipient tx-sender)) (err u2))
@@ -187,6 +191,7 @@
 
 (define-public (burn (synth-amount uint))
   (begin
+    (asserts! (var-get initialized) err-not-initialized)
     (asserts! (> synth-amount u0) err-invalid-amount-param)
     (unwrap! (ft-burn? synth-ft synth-amount tx-sender) err-synth-burning-failed)
     (unwrap! (ft-burn? debt-ft synth-amount tx-sender) err-debt-decreasing-failed)
@@ -201,6 +206,8 @@
       (liquidation-stx-reward (ft-get-balance locked-stx-ft liquidatable))
       (liquidator tx-sender)
     )
+
+    (asserts! (var-get initialized) err-not-initialized)
 
     ;; Checking if the account is not solvent
     (asserts!
