@@ -8,10 +8,12 @@ import {
 import { assertEquals } from "https://deno.land/std@0.90.0/testing/asserts.ts";
 
 const contractName = "synth";
+const pseudoInfinity = "u10000000000000000000";
 const errors = {
   "already-initialized": "u7",
   "not-initialized": "u12",
 };
+const mockRedstonePayload = types.buff("Mock redstone payload");
 
 Clarinet.test({
   name: "Should not interact before initializing",
@@ -39,7 +41,7 @@ Clarinet.test({
         "remove-collateral",
         [
           types.uint(100000), // stx-amount
-          types.buff("Mock redstone payload"),
+          mockRedstonePayload,
         ],
         accounts.get("wallet_1").address
       ),
@@ -56,7 +58,7 @@ Clarinet.test({
         "mint",
         [
           types.uint(100000), // stx-amount
-          types.buff("Mock redstone payload"),
+          mockRedstonePayload,
         ],
         accounts.get("wallet_1").address
       ),
@@ -95,25 +97,118 @@ Clarinet.test({
 
 Clarinet.test({
   name: "Should properly add collateral, mint, and burn",
-  async fn(chain: Chain, accounts: Map<string, Account>) {},
-});
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const [deployer, accountA] = ["deployer", "wallet_1"].map(
+      (who) => accounts.get(who)!
+    );
 
-Clarinet.test({
-  name: "Should not mint too much tokens",
-  async fn(chain: Chain, accounts: Map<string, Account>) {},
-});
+    // Should correctly initialize
+    let block = chain.mineBlock([
+      Tx.contractCall(
+        contractName,
+        "initialize",
+        [
+          types.ascii("Synthetic AAPL"), // name
+          types.ascii("SYNTH-AAPL"), // symbol
+          types.ascii("AAPL"), // data feed id
+        ],
+        deployer.address
+      ),
+    ]);
+    block.receipts[0].result.expectOk();
 
-Clarinet.test({
-  name: "Should not remove too much collateral",
-  async fn(chain: Chain, accounts: Map<string, Account>) {},
-});
+    // Should add collateral
+    block = chain.mineBlock([
+      Tx.contractCall(
+        contractName,
+        "add-collateral",
+        [
+          types.uint(100000), // stx-amount
+        ],
+        accountA.address
+      ),
+    ]);
+    block.receipts[0].result.expectOk();
 
-Clarinet.test({
-  name: "Should properly liquidate an insolvent principal",
-  async fn(chain: Chain, accounts: Map<string, Account>) {},
-});
+    // Should properly calculate solvency ratio
+    const solvencyRatio1 = chain.callReadOnlyFn(
+      contractName,
+      "get-solvency-ratio",
+      [types.principal(accountA.address)],
+      accountA.address
+    );
+    assertEquals(solvencyRatio1.result, pseudoInfinity);
 
-Clarinet.test({
-  name: "Should not liquidate a solvent principal",
-  async fn(chain: Chain, accounts: Map<string, Account>) {},
+    // Should properly calculate user balance
+    const userSynthBalance1 = chain.callReadOnlyFn(
+      contractName,
+      "get-balance",
+      [types.principal(accountA.address)],
+      accountA.address
+    );
+    assertEquals(userSynthBalance1.result, "(ok u0)");
+
+    // Should properly mint
+    block = chain.mineBlock([
+      Tx.contractCall(
+        contractName,
+        "mint",
+        [
+          types.uint(100), // synth-aapl-amount
+          mockRedstonePayload,
+        ],
+        accountA.address
+      ),
+    ]);
+    block.receipts[0].result.expectOk();
+
+    // Solvency should have been updated
+    const solvencyRatio2 = chain.callReadOnlyFn(
+      contractName,
+      "get-solvency-ratio",
+      [types.principal(accountA.address)],
+      accountA.address
+    );
+    assertEquals(solvencyRatio2.result, "u200000");
+
+    // User balance should have been updated
+    const userSynthBalance2 = chain.callReadOnlyFn(
+      contractName,
+      "get-balance",
+      [types.principal(accountA.address)],
+      accountA.address
+    );
+    assertEquals(userSynthBalance2.result, "(ok u100)");
+
+    // Should burn
+    block = chain.mineBlock([
+      Tx.contractCall(
+        contractName,
+        "burn",
+        [
+          types.uint(50), // synth-aapl-amount
+        ],
+        accountA.address
+      ),
+    ]);
+    block.receipts[0].result.expectOk();
+
+    // Solvency should have been updated
+    const solvencyRatio3 = chain.callReadOnlyFn(
+      contractName,
+      "get-solvency-ratio",
+      [types.principal(accountA.address)],
+      accountA.address
+    );
+    assertEquals(solvencyRatio3.result, "u400000");
+
+    // User balance should have been updated
+    const userSynthBalance3 = chain.callReadOnlyFn(
+      contractName,
+      "get-balance",
+      [types.principal(accountA.address)],
+      accountA.address
+    );
+    assertEquals(userSynthBalance3.result, "(ok u50)");
+  },
 });
