@@ -2,7 +2,7 @@
 ;; Synthetic asset token collateralized by STX and powered by RedStone oracles
 ;; Author: Alex Suvorov (alex@redstone.finance)
 
-(impl-trait .sip010-trait.ft-trait)
+(impl-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CONSTANTS
@@ -84,16 +84,27 @@
 )
 
 (define-read-only (get-symbol)
-  (if (var-get initialized) (ok (var-get symbol)) err-not-initialized)
+  (if (var-get initialized)
+    (ok (var-get symbol))
+    err-not-initialized
+  )
 )
 
-(define-read-only (get-decimals) decimals)
+(define-read-only (get-decimals)
+  (ok decimals)
+)
 
-(define-read-only (get-balance (account principal)) (ft-get-balance synth-ft account))
+(define-read-only (get-balance (account principal))
+  (ok (ft-get-balance synth-ft account))
+)
 
-(define-read-only (get-total-supply) (ft-get-supply synth-ft))
+(define-read-only (get-total-supply)
+  (ok (ft-get-supply synth-ft))
+)
 
-(define-read-only (get-token-uri) err-token-uri-feat-not-implemented)
+(define-read-only (get-token-uri)
+  err-token-uri-feat-not-implemented
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; PUBLIC FUNCTIONS (WITH STATE MODIFICATIONS)
