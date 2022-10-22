@@ -34,11 +34,11 @@ Token minters can short undrlying assets (e.g. stocks, indexes, commodities, cur
 
 #### Liquidators
 
-Liquidators are incentivised to keep track of solvency of the minters. If they notice that a minter is insolvent, they can liquidate them by repaying the debt for the insolvent minter and getting their collateral. A minter becomes insolvent if their solvency ratio falls below 120%, which gives enough time for liquidators to buy synth from the market, burn and gain profit from those activities.
+Liquidators are incentivised to keep track of solvency of the minters. If they notice that a minter is insolvent, they can liquidate them by repaying the debt for the insolvent minter and getting their collateral. A minter becomes insolvent if their solvency ratio falls below 120%, which gives enough time for liquidators to buy synths from the market, burn and gain profit from those activities.
 
 #### Traders
 
-You've probably noticed, that for both minters and liquidators it's quite important to have a liquid exchange where the synthetic assets can be bought and sold. Traders can help to achieve this liquidity by speculating on the synthetic assets price.
+You've probably noticed, that for both minters and liquidators it's quite important to have a liquid exchange where the synthetic assets can be bought and sold. Traders can help to achieve this liquidity by speculating on the underlying assets price.
 
 ### RedStone oracles
 
@@ -49,3 +49,4 @@ All synthetic assets heavily rely on the pricing data from oracles, that's why i
 - Integration with the new version of redstone-stacks-connector
 - More tests for edge cases
 - Prepare UI for minters
+- Prepare bots for liquidation
